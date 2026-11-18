@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#17324d">
+<title>Relevé ferroviaire – G3 & Ed</title>
+<style>
+:root{--navy:#17324d;--blue:#2878b9;--bg:#f3f6f9;--line:#d9e1e8;--muted:#607080}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font:16px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#182633}
+header{background:var(--navy);color:white;padding:22px 16px 18px}header h1{font-size:22px;margin:0 0 5px}header p{margin:0;color:#d5e1ea;font-size:13px}
+main{max-width:1000px;margin:auto;padding:14px}.panel{background:white;border:1px solid var(--line);border-radius:14px;padding:15px;margin:0 0 14px;box-shadow:0 2px 8px #14283b0a}
+h2{font-size:18px;margin:0 0 12px;color:var(--navy)}h3{font-size:15px;margin:14px 0 8px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.field label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}.field input,.field select{width:100%;min-width:0;padding:11px;border:1px solid #cbd6df;border-radius:9px;font-size:16px;background:white}
+button{border:0;border-radius:10px;padding:12px 15px;font-weight:650;font-size:15px;cursor:pointer}.primary{background:var(--blue);color:white}.secondary{background:#eaf0f5;color:var(--navy)}.danger{background:#fff0ef;color:#a52a24}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.check{display:flex;align-items:center;gap:9px;margin:12px 0}.check input{width:20px;height:20px}
+.tabs{display:flex;gap:8px;margin-bottom:12px}.tabs button{flex:1}.tabs .active{background:var(--navy);color:white}
+.tablewrap{overflow-x:auto}table{width:100%;border-collapse:collapse;min-width:650px}th,td{padding:7px 5px;border-bottom:1px solid var(--line);text-align:center;font-size:13px}th{color:var(--muted);font-weight:600;background:#f8fafc;position:sticky;top:0}td input{width:76px;padding:9px 5px;border:1px solid #cbd6df;border-radius:7px;font-size:15px;text-align:center}td input.pk{width:105px}tr:nth-child(even){background:#fbfcfd}.window{font-weight:700;border-radius:6px;padding:4px 6px;display:inline-block}.result{font-size:24px;font-weight:750;color:var(--navy)}.small{font-size:12px;color:var(--muted);line-height:1.45}.status{font-size:13px;color:var(--muted)}.cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.metric{background:#f5f8fb;border-radius:10px;padding:12px}.metric b{display:block;font-size:21px;color:var(--navy)}.metric span{font-size:12px;color:var(--muted)}
+@media(max-width:600px){main{padding:10px}.panel{padding:12px}.grid{grid-template-columns:1fr 1fr}.result{font-size:20px}}
+@media print{header{background:white;color:black;padding:0 0 12px}header p{color:#333}body{background:white}.panel{box-shadow:none;break-inside:avoid}button,.tabs{display:none!important}main{max-width:none;padding:0}.tablewrap{overflow:visible}table{min-width:0}td input{border:0;padding:2px;width:55px}}
+</style></head>
+<body>
+<header><h1>Relevé ferroviaire – G3 & Ed</h1><p>Calcul des gauches et écarts de dévers · relevé avant / après travaux</p></header>
+<main>
+<section class="panel"><h2>Identification du relevé</h2>
+<div class="grid">
+<div class="field"><label>Année</label><input id="year" placeholder="2026"></div>
+<div class="field"><label>GIC</label><input id="gic"></div>
+<div class="field"><label>Ligne</label><input id="line"></div>
+<div class="field"><label>Voie</label><select id="track"><option>VP</option><option>VS</option></select></div>
+<div class="field"><label>PK début</label><input id="pkstart" placeholder="297,843"></div>
+<div class="field"><label>PK fin</label><input id="pkend" placeholder="297,853"></div>
+<div class="field"><label>Nom</label><input id="name"></div>
+<div class="field"><label>Règle n°</label><input id="rule"></div>
+<div class="field"><label>Date</label><input id="date" type="date"></div>
+<div class="field"><label>Validité / référence</label><input id="validity"></div>
+</div>
+</section>
+<section class="panel"><h2>Mode de relevé</h2>
+<label class="check"><input id="nodance" type="checkbox" onchange="render()"> Absence de danse vérifiée (dévers réel = dévers lu)</label>
+<p class="small">Si la case n'est pas cochée, renseigne séparément la danse et le dévers de chaque file. Le dévers réel utilisé dans les calculs est dévers lu + danse.</p>
+<div class="tabs"><button id="beforeTab" class="active" onclick="setSide('before')">Avant travaux</button><button id="afterTab" class="secondary" onclick="setSide('after')">Après travaux</button></div>
+<div class="actions"><button class="secondary" onclick="addRow()">＋ Ajouter une traverse</button><button class="secondary" onclick="loadExample()">Exemple</button><button class="danger" onclick="clearSide()">Effacer ce relevé</button></div>
+</section>
+<section class="panel"><h2 id="entryTitle">Saisie – Avant travaux</h2>
+<div class="tablewrap"><table><thead><tr><th>Traverse</th><th>PK</th><th>Danse file G</th><th>Dévers file G</th><th>Dévers file D</th><th>Danse file D</th><th>Dévers réel G</th><th>Dévers réel D</th></tr></thead><tbody id="rows"></tbody></table></div>
+<p class="small">Les PK restent libres. Saisis les mesures dans les colonnes correspondant aux deux files. Les valeurs réelles sont calculées automatiquement.</p>
+</section>
+<section class="panel"><h2>Résultats G3 – méthode en diagonale</h2>
+<p class="small">Fenêtre glissante de 6 traverses (base de 3 m), décalée d'une traverse à chaque calcul. Rouge = file G au début + file D à la fin ; bleu = file D au début + file G à la fin. G3 = bleu − rouge, signe conservé.</p>
+<div id="g3results"></div>
+</section>
+<section class="panel"><h2>Calcul Ed – base de 10 m</h2>
+<p class="small">Pour chaque point central B, le calcul utilise les points A et C situés à 5 m de part et d'autre : Ed = |dB − (dA + dC) / 2|. Le signe de l'écart avant valeur absolue indique la nature : négatif = trou, positif = bosse. Les valeurs sont traitées indépendamment pour chaque file. Les points sont interpolés linéairement à partir des PK saisis.</p>
+<div id="edresults"></div>
+</section>
+<section class="panel"><h2>Avant / après travaux</h2><div id="compare" class="cards"></div><p class="small">La comparaison porte sur les valeurs calculées disponibles dans chaque relevé.</p></section>
+<section class="panel"><h2>Exporter</h2><div class="actions"><button class="primary" onclick="window.print()">Imprimer / Enregistrer en PDF</button><button class="secondary" onclick="exportCSV()">Exporter les données CSV</button></div><p class="small">Pour conserver le relevé sur iPhone, utilise « Partager » puis « Enregistrer dans Fichiers » après l'export CSV ou le PDF.</p></section>
+</main>
+<script>
+let side='before', data={before:[],after:[]};
+function blank(i){return {n:i+1,pk:'',dg:'',vg:'',vd:'',dd:''}}
+function init(){data.before=Array.from({length:12},(_,i)=>blank(i));data.after=Array.from({length:12},(_,i)=>blank(i));render()}
+function setSide(s){side=s;document.getElementById('beforeTab').className=s==='before'?'active':'secondary';document.getElementById('afterTab').className=s==='after'?'active':'secondary';document.getElementById('entryTitle').textContent='Saisie – '+(s==='before'?'Avant':'Après')+' travaux';render()}
+function num(v){if(v===undefined||v===null||String(v).trim()==='')return null;let x=Number(String(v).replace(',','.'));return Number.isFinite(x)?x:null}
+function real(r,file){let nod=document.getElementById('nodance').checked;let v=num(file==='G'?r.vg:r.vd);let d=nod?0:num(file==='G'?r.dg:r.dd);return v===null?null:v+(d||0)}
+function update(i,k,v){data[side][i][k]=v;render()}
+function render(){let body=document.getElementById('rows');body.innerHTML='';data[side].forEach((r,i)=>{let tr=document.createElement('tr');let g=real(r,'G'),d=real(r,'D');tr.innerHTML=`<td>${i+1}</td><td><input class="pk" value="${r.pk}" placeholder="PK" onchange="update(${i},'pk',this.value)"></td><td>${danceInput(i,'dg',r.dg)}</td><td>${valInput(i,'vg',r.vg)}</td><td>${valInput(i,'vd',r.vd)}</td><td>${danceInput(i,'dd',r.dd)}</td><td>${g===null?'—':g.toFixed(1)}</td><td>${d===null?'—':d.toFixed(1)}</td>`;body.appendChild(tr)});calcG3();calcEd();compare()}
+function danceInput(i,k,v){return document.getElementById('nodance').checked?'—':`<input value="${v}" placeholder="mm" onchange="update(${i},'${k}',this.value)">`}
+function valInput(i,k,v){return `<input value="${v}" placeholder="mm" onchange="update(${i},'${k}',this.value)">`}
+function calcG3(){let out=[];let a=data[side];for(let i=0;i+5<a.length;i++){let g0=real(a[i],'G'),d0=real(a[i],'D'),g5=real(a[i+5],'G'),d5=real(a[i+5],'D');if([g0,d0,g5,d5].some(x=>x===null))continue;let red=d0+g5,blue=g0+d5,res=blue-red;let colors=['#dceeff','#e0f2df','#fff2c9','#fbe1d8','#e7e9ed'];out.push(`<div class="metric" style="margin:7px 0;background:${colors[i%5]}"><span>Fenêtre traverses ${i+1} à ${i+6} · Rouge ${red.toFixed(1)} / Bleu ${blue.toFixed(1)}</span><b>${res>0?'+':''}${res.toFixed(1)} mm</b></div>`)}document.getElementById('g3results').innerHTML=out.length?out.join(''):'<p class="status">Renseigne les deux files sur au moins 6 traverses consécutives pour obtenir un G3.</p>'}
+function pk(r){let s=String(r.pk).trim().replace(',','.');if(!s)return null;let n=Number(s);return Number.isFinite(n)?n:null}
+function interpolate(rows,file,target){let pts=rows.map(r=>({x:pk(r),y:real(r,file)})).filter(p=>p.x!==null&&p.y!==null).sort((a,b)=>a.x-b.x);for(let i=0;i<pts.length;i++){if(Math.abs(pts[i].x-target)<1e-7)return pts[i].y;if(i<pts.length-1&&pts[i].x<target&&pts[i+1].x>target){let p=pts[i],q=pts[i+1];return p.y+(q.y-p.y)*(target-p.x)/(q.x-p.x)}}return null}
+function calcEd(){let a=data[side],centers=a.map(pk).filter(x=>x!==null),out=[];centers.forEach(b=>{let A=b-0.005,C=b+0.005;['G','D'].forEach(f=>{let da=interpolate(a,f,A),db=interpolate(a,f,b),dc=interpolate(a,f,C);if([da,db,dc].some(x=>x===null))return;let signed=db-(da+dc)/2,ed=Math.abs(signed);out.push(`<div class="metric"><span>PK ${b} · File ${f} · A ${A.toFixed(3)} / B ${b.toFixed(3)} / C ${C.toFixed(3)}</span><b>Ed ${ed.toFixed(1)} mm</b><span>${signed<0?'Trou (−)':signed>0?'Bosse (+)':'Écart nul'} · écart signé ${signed>0?'+':''}${signed.toFixed(1)} mm</span></div>`)})});document.getElementById('edresults').innerHTML=out.length?`<div class="cards">${out.join('')}</div>`:'<p class="status">Ed apparaît lorsqu’un point B est renseigné et que les mesures encadrent B à 5 m de chaque côté (PK saisis en kilomètres, ex. 297,843). L’interpolation est faite à partir des PK.</p>'}
+function compare(){let box=document.getElementById('compare');let counts=['before','after'].map(s=>{let a=data[s],g=0,e=0;for(let i=0;i+5<a.length;i++)if([real(a[i],'G'),real(a[i],'D'),real(a[i+5],'G'),real(a[i+5],'D')].every(x=>x!==null))g++;return {s,g,rows:a.filter(r=>pk(r)!==null).length}});box.innerHTML=counts.map(x=>`<div class="metric"><span>${x.s==='before'?'Avant travaux':'Après travaux'}</span><b>${x.g} G3</b><span>${x.rows} PK renseignés</span></div>`).join('')}
+function addRow(){data[side].push(blank(data[side].length));render()}
+function clearSide(){if(confirm('Effacer toutes les mesures de ce relevé ?')){data[side]=Array.from({length:12},(_,i)=>blank(i));render()}}
+function loadExample(){data[side]=Array.from({length:8},(_,i)=>({n:i+1,pk:String((297843+i*600)/1000).replace('.',','),dg:'0',vg:String([0,2,4,3,1,0,2,1][i]),vd:String([1,3,2,4,0,2,1,0][i]),dd:'0'}));render()}
+function exportCSV(){let lines=['Traverse;PK;Danse_G;Devers_G;Devers_D;Danse_D;Reel_G;Reel_D'];data[side].forEach((r,i)=>lines.push([i+1,r.pk,r.dg,r.vg,r.vd,r.dd,real(r,'G')??'',real(r,'D')??''].join(';')));let blob=new Blob(['\ufeff'+lines.join('\n')],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='releve_'+side+'.csv';a.click();URL.revokeObjectURL(url)}
+init();
+</script></body></html>
